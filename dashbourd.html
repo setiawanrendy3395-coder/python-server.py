@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pemantauan Jaringan Real-Time</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 30px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1); }
+        h2 { color: #333; margin-top: 0; text-align: center; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #e9ecef; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-card h4 { margin: 0 0 5px 0; color: #6c757d; font-size: 14px; }
+        .stat-card span { font-size: 22px; font-weight: bold; color: #333; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #007bff; color: white; }
+        
+        .badge { padding: 6px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; color: white; display: inline-block; }
+        .bg-online { background-color: #28a745; }
+        .bg-offline { background-color: #dc3545; }
+        
+        .refresh-info { margin-top: 15px; font-size: 13px; color: #666; text-align: right; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Dashboard Pemantauan Jaringan UMKM / Industri</h2>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h4>Total Perangkat</h4>
+            <span id="totalPerangkat">0</span>
+        </div>
+        <div class="stat-card">
+            <h4>Status Aman</h4>
+            <span id="totalOnline" style="color: #28a745;">0</span>
+        </div>
+        <div class="stat-card">
+            <h4>Perangkat Gangguan</h4>
+            <span id="totalOffline" style="color: #dc3545;">0</span>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nama Perangkat</th>
+                <th>IP Address</th>
+                <th>Status</th>
+                <th>Latensi (Ping)</th>
+            </tr>
+        </thead>
+        <tbody id="tabelPerangkat">
+            <!-- Data akan diisi otomatis via Python -->
+        </tbody>
+    </table>
+
+    <div class="refresh-info">
+        Memindai jaringan secara real-time dari server lokal...
+    </div>
+</div>
+
+<script>
+    function fetchData() {
+        fetch('http://127.0.0.1:5000/api/scan')
+            .then(response => response.json())
+            .then(data => {
+                let tbody = document.getElementById("tabelPerangkat");
+                tbody.innerHTML = "";
+                
+                let onlineCount = 0;
+                let offlineCount = 0;
+
+                data.forEach(dev => {
+                    if(dev.status === "ONLINE") onlineCount++;
+                    else offlineCount++;
+
+                    let badgeClass = dev.status === "ONLINE" ? "bg-online" : "bg-offline";
+                    
+                    let row = `<tr>
+                        <td>${dev.name}</td>
+                        <td>${dev.ip}</td>
+                        <td><span class="badge ${badgeClass}">${dev.status}</span></td>
+                        <td>${dev.ping}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+
+                document.getElementById("totalPerangkat").innerText = data.length;
+                document.getElementById("totalOnline").innerText = onlineCount;
+                document.getElementById("totalOffline").innerText = offlineCount;
+            })
+            .catch(err => console.error("Gagal terhubung ke server backend:", err));
+    }
+
+    // Jalankan pertama kali dan ulangi setiap 5 detik
+    fetchData();
+    setInterval(fetchData, 5000);
+</script>
+
+</body>
+</html>
